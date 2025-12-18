@@ -1,4 +1,4 @@
-"""Utility functions"""
+"""Utility functions."""
 
 import random
 import logging

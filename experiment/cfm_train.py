@@ -1,4 +1,4 @@
-"""Train the CFM toy model"""
+"""Training loop for CFM experiment."""
 
 import math
 import time
@@ -7,11 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-import numpy as np
-from tqdm.auto import tqdm
 from scipy.optimize import linear_sum_assignment
 
 from experiment.cfm_toy_model import CFMToyModel
@@ -36,6 +33,8 @@ logger.info(f"Using device: {DEVICE}\n")
 
 @dataclass
 class TrainingConfig:
+    """Training configuration hyperparameters"""
+
     device: str = DEVICE
     seed: int = 42
     learning_rate: float = 1e-3
@@ -51,11 +50,13 @@ def sample_evenly_spaced_circle(
     randomise: bool = True,
     device: str = "cpu",
 ) -> Tensor:
-    """Target: points on unit circle"""
+    """Sample uniformly spaced points on a unit circle then randomly rotate the
+    targets to break rotational symmetry in the target distribution.
+    """
     theta = torch.linspace(0, 2 * math.pi, n_samples + 1, device=device)[:-1]
     target_positions = torch.stack([torch.cos(theta), torch.sin(theta)], dim=1)
     if randomise:
-        # Randomly rotate the targets to break the permutation symmetry
+        # Randomly rotate the targets to break the rotational symmetry
         angle = torch.rand(1).item() * 2 * math.pi
         cos, sin = math.cos(angle), math.sin(angle)
         rotation_matrix = torch.tensor(
@@ -70,7 +71,7 @@ def sample_evenly_spaced_circle(
 
 
 def sample_matched_pairs(n_samples: int, device: str = "cpu"):
-    """Match noise to target with optimal transport"""
+    """Match noise to target with optimal transport to minimise total displacement."""
     # Sample from gaussian noise
     x0 = torch.randn(
         (n_samples, 2),
@@ -92,6 +93,7 @@ def sample_matched_pairs(n_samples: int, device: str = "cpu"):
 
 
 def train(model, optimiser, config):
+    """Train the CFM model with conditional flow loss."""
     training_start_time = time.perf_counter()
     model.train()
 

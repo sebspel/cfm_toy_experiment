@@ -1,4 +1,4 @@
-"""Generate and visualise the results of the mini-experiment"""
+"""Generate particle trajectories and visualise emergent collective dynamics."""
 
 import math
 import logging
@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import torch
-import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -24,9 +23,13 @@ DEVICE = get_device()
 
 @dataclass
 class VisualisationConfig:
+    """Configuration for trajectory generation hyperparameters and visualisation."""
+
     n_particles: int = 64
     seed: int = 42
     n_steps: int = 100
+    noise_mean: float = 0.5
+    noise_std: float = 0.3
     device: str = DEVICE
     model_checkpoint_path: str | Path = BASE_CHECKPOINT_PATH / "cfm_toy_model_10000.pt"
 
@@ -34,20 +37,20 @@ class VisualisationConfig:
 def generate_trajectories(
     model,
     device: str,
+    noise_mean: float = 0.0,
+    noise_std: float = 1.0,
     n_particles: int = 20,
     n_steps: int = 100,
 ) -> np.ndarray:
-    """Generate probability density paths (particles) and visualise them"""
+    """Generate particle trajectories by numerically integrating the learned velocity field
+    from noise to target distribution.
+    """
     model_was_training = model.training
     model.eval()
     # Generate noised samples/particles
-    # particles = torch.randn(
-    #     (n_particles, 2),
-    #     device=device,
-    # )
     particles = torch.normal(
-        0.0,
-        0.3,
+        noise_mean,
+        noise_std,
         size=(n_particles, 2),
         device=device,
     )
@@ -75,6 +78,8 @@ def generate_trajectories(
 
 
 def visualise_results(trajectories: np.ndarray, n_steps: int):
+    """Create animation and plots showing particle trajectories and final distribution."""
+
     fig, ax = plt.subplots(figsize=(6, 6), dpi=150)
     angles = np.linspace(0, 2 * math.pi, 100)
     cos_angles = np.cos(angles)
@@ -163,6 +168,8 @@ def main():
     particle_trajectories = generate_trajectories(
         model,
         visualisation_config.device,
+        noise_mean=visualisation_config.noise_mean,
+        noise_std=visualisation_config.noise_std,
         n_particles=visualisation_config.n_particles,
         n_steps=visualisation_config.n_steps,
     )

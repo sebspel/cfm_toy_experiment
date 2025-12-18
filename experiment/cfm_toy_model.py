@@ -1,3 +1,5 @@
+"""Conditional Flow Matching (CFM) model with learned pairwise particle interactions."""
+
 import logging
 
 import torch
@@ -8,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class CFMToyModel(nn.Module):
-    """CFM onto circle with learned pairwise interactions"""
+    """Conditional Flow Matching  model with learned pairwise interactions"""
 
     def __init__(self):
         super().__init__()
